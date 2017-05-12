@@ -15,6 +15,8 @@ Email: unauthorized@users.com
 Password: password
 ```
 
+![How it looks](http://i.imgur.com/WR7BXVW.png)
+
 # Rules Detection
 
 The rules<->clients detection is done by parsing the rule's script.
@@ -42,8 +44,6 @@ function (user, context, callback) {
   callback(null, user, context);
 }
 ```
-
-![How it looks](http://i.imgur.com/WR7BXVW.png)
 
 # Installation (local test)
 
