@@ -32,5 +32,11 @@ namespace WhichClientWhichRules.Controllers
 			});
 			await HttpContext.Authentication.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 		}
+
+		public IActionResult AccessDenied()
+		{
+			return View();
+		}
+
 	}
 }

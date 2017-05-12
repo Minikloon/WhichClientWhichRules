@@ -33,8 +33,10 @@ namespace WhichClientWhichRules
 		public void ConfigureServices(IServiceCollection services)
 		{
 			// Add authentication services
-			services.AddAuthentication(
-				options => options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme);
+			services.AddAuthentication(options =>
+			{
+				options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+			});
 
 			// Add framework services.
 			services.AddMvc();
@@ -74,30 +76,32 @@ namespace WhichClientWhichRules
 			// Add the OIDC middleware
 			var options = new OpenIdConnectOptions("Auth0")
 			{
-				// Set the authority to your Auth0 domain
 				Authority = $"https://{auth0Settings.Value.Domain}",
-
-				// Configure the Auth0 Client ID and Client Secret
+				
 				ClientId = auth0Settings.Value.ClientId,
 				ClientSecret = auth0Settings.Value.ClientSecret,
-
-				// Do not automatically authenticate and challenge
+				
 				AutomaticAuthenticate = false,
 				AutomaticChallenge = false,
-
-				// Set response type to code
+				
 				ResponseType = "code",
 
-				// Set the callback path, so Auth0 will call back to http://localhost:5000/signin-auth0 
-				// Also ensure that you have added the URL as an Allowed Callback URL in your Auth0 dashboard 
 				CallbackPath = new PathString("/signin-auth0"),
-
-				// Configure the Claims Issuer to be Auth0
+				
 				ClaimsIssuer = "Auth0",
 
 				Events = new OpenIdConnectEvents
 				{
-					// handle the logout redirection 
+					OnRemoteFailure = context =>
+					{
+						if (context.Failure.Message.Contains("unauthorized"))
+						{
+							context.Response.Redirect("/Account/AccessDenied");
+							context.HandleResponse();
+						}
+
+						return Task.CompletedTask;
+					},
 					OnRedirectToIdentityProviderForSignOut = (context) =>
 					{
 						var logoutUri = $"https://{auth0Settings.Value.Domain}/v2/logout?client_id={auth0Settings.Value.ClientId}";
