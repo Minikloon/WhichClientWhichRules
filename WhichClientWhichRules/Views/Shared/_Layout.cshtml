@@ -1,4 +1,6 @@
-﻿@inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
+﻿@using Microsoft.Extensions.Options
+@inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
+@inject IOptions<SiteOptions> Site
 <!DOCTYPE html>
 <html>
 <head>
@@ -23,7 +25,7 @@
         @RenderBody()
         <hr />
         <footer>
-            <p>&copy; 2017 - Charlie Inc.</p>
+            <p>&copy; @DateTime.UtcNow.Year - @Site.Value.Company</p>
         </footer>
     </div>
 

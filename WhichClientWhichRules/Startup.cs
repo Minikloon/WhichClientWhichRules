@@ -46,6 +46,9 @@ namespace WhichClientWhichRules
 
 			// Add the Auth0 Settings object so it can be injected
 			services.Configure<Auth0Settings>(Configuration.GetSection("Auth0"));
+
+			// Add the SiteOptions object so it can be injected
+			services.Configure<SiteOptions>(Configuration.GetSection("Site"));
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
