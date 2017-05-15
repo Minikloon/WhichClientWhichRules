@@ -1,6 +1,6 @@
 # WhichClientWhichRules
 
-This is a simple C# ASP.NET Core application which lets you view which rules affect which clients. 
+This is a simple C# ASP.NET Core application which lets you view which rules affect which clients on Auth0.
 
 It works fine, but is meant for further customization.
 
@@ -21,27 +21,19 @@ Password: password
 
 The rules<->clients detection is done by parsing the rule's script.
 
-In order for the client to be properly detected, make sure to have an array named **clients** containing the clients for which the rule applies.
+In order for the client to be properly detected, make sure that the first condition of your rule's script is the clients whitelist. You can identify the relevant client both by name or id, and you can have multiple clients. Make sure that your rules follow the following pattern in its whitelist condition:
 
-Here's the whitelist rule for the demo application:
 ```javascript
 function (user, context, callback) {
-  var clients = ['WhatClientWhichRules'];
-  if(clients.indexOf(context.clientName) === -1) {
-      return callback(null, user, context);
+  if (context.clientName !== 'Client1ToWhiteList' && context.clientName !== 'SecondClientToWhiteList' && context.clientID !== '3wgXJTZpOPobwfQl8EeAHPsxYpKRdP5B')
+  {
+    // Rule function returns without any action  
+    return callback(null, user, context);
   }
   
-  var whitelist = [ 'testuser@gmail.com' ]; //authorized users
-  var userHasAccess = whitelist.some(
-    function (email) {
-      return email === user.email;
-  });
+  console.log("this code runs for the whitelisted clients");
 
-  if (!userHasAccess) {
-    return callback(new UnauthorizedError('Access denied.'));
-  }
-  
-  callback(null, user, context);
+  return callback(null, user, context);
 }
 ```
 
