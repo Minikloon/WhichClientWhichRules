@@ -6,17 +6,18 @@ using Auth0.AuthenticationApi;
 using Auth0.AuthenticationApi.Models;
 using Auth0.ManagementApi;
 using Auth0.ManagementApi.Models;
-using Jose;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using WhichClientWhichRules.Models;
+using WhichClientWhichRules.ScriptParser;
 
 namespace WhichClientWhichRules.Controllers
 {
 	[Authorize]
 	public class HomeController : Controller
 	{
+		private readonly IScriptParser _scriptParser = new ConditionBlockScriptParser();
 		private readonly Auth0Settings _auth0;
 
 		public HomeController(IOptions<Auth0Settings> auth0Settings)
@@ -37,22 +38,22 @@ namespace WhichClientWhichRules.Controllers
 	        var mgmtClient = new ManagementApiClient(token.AccessToken, new Uri($"https://{_auth0.Domain}/api/v2"));
 
 			var rules = await mgmtClient.Rules.GetAllAsync(fields: "name,script,order");
-			var clients = await mgmtClient.Clients.GetAllAsync(fields: "name,global");
+			var clients = await mgmtClient.Clients.GetAllAsync(fields: "name,client_id");
 
 			var rulesByClient = clients.Where(c => c.Name != "All Applications").ToDictionary(
-				client => client.Name, 
+				client => client, 
 				client => new ClientAndMatchedRules()
 				{
-					ClientName = client.Name,
-					MatchedRules = new List<Rule>()
+					Client = client,
+					MatchedRules = new HashSet<Rule>()
 				}
 			);
 			var unmatchedRules = new List<UnmatchedRule>();
 
 			foreach (var rule in rules)
 			{
-				var clientNames = ParseClientsFromScript(rule.Script);
-				if (clientNames == null)
+				var applicableClients = _scriptParser.ParseApplicableClients(rule.Script);
+				if (applicableClients == null || applicableClients.Count == 0)
 				{
 					unmatchedRules.Add(new UnmatchedRule()
 					{
@@ -61,21 +62,21 @@ namespace WhichClientWhichRules.Controllers
 					});
 					continue;
 				}
-				foreach (var detectedClient in clientNames)
+				foreach (var applicable in applicableClients)
 				{
-					ClientAndMatchedRules client;
-					if (rulesByClient.TryGetValue(detectedClient, out client))
-					{
-						client.MatchedRules.Add(rule);
-					}
-					else
+					Client matchingClient;
+					if (!applicable.TryGetMatchingClient(clients, out matchingClient))
 					{
 						unmatchedRules.Add(new UnmatchedRule()
 						{
 							RuleName = rule.Name,
-							Reason = $"Couldn't find matching client named \"{detectedClient}\""
+							Reason = $"Couldn't find matching client {applicable.GetHumanReadableId()}"
 						});
+						continue;
 					}
+
+					ClientAndMatchedRules clientAndMatchedRules = rulesByClient[matchingClient];
+					clientAndMatchedRules.MatchedRules.Add(rule);
 				}
 			}
 
@@ -85,25 +86,5 @@ namespace WhichClientWhichRules.Controllers
 				UnmatchedRules = unmatchedRules
 			});
         }
-
-		private const string variableName = "clients";
-		private IList<string> ParseClientsFromScript(string script)
-		{
-			int indexOfClientsVariable = script.IndexOf(variableName, StringComparison.Ordinal);
-			if (indexOfClientsVariable == -1)
-				return null;
-			var scriptFromVariable = script.Substring(indexOfClientsVariable);
-
-			var inBetweenFirstBrackets = scriptFromVariable.Split('[', ']');
-			if (inBetweenFirstBrackets.Length < 2)
-				return null;
-			var commaSeparatedList = inBetweenFirstBrackets[1];
-
-			var clientNameList = commaSeparatedList.Split(',').Select(
-				jsString => jsString.Trim(' ', '\'', '"')
-			);
-
-			return clientNameList.ToList();
-		}
     }
 }

@@ -16,15 +16,15 @@
                 <th>Client</th>
                 <th>Rules (Sorted by execution order)</th>
             </tr>
-            @foreach (var client in Model.ClientAndRules)
+            @foreach (var clientAndRules in Model.ClientAndRules)
             {
                 <tr>
-                    <td>@client.ClientName</td>
+                    <td>@clientAndRules.Client.Name</td>
                     <td>
-                        @if (client.MatchedRules.Any())
+                        @if (clientAndRules.MatchedRules.Any())
                         {
                             <ul>
-                                @foreach (var rule in client.MatchedRules)
+                                @foreach (var rule in clientAndRules.MatchedRules.OrderBy(rule => rule.Order))
                                 {
                                     <li>@rule.Name</li>
                                 }

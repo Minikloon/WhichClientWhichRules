@@ -11,8 +11,8 @@ namespace WhichClientWhichRules.Models
 
 	public class ClientAndMatchedRules
 	{
-		public string ClientName { get; set; }
-		public IList<Rule> MatchedRules { get; set; }
+		public Client Client { get; set; }
+		public ISet<Rule> MatchedRules { get; set; }
 	}
 
 	public class UnmatchedRule
